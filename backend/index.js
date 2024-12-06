@@ -57,8 +57,58 @@ client.connect()
     }
   });
   
+  app.put('/posts/like/:id', async (req, res) => {
+    const postId = parseInt(req.params.id);
+  
 
+    const selectQuery = 'SELECT * FROM posts WHERE id = $1';
+    const selectResult = await client.query(selectQuery, [postId]);
+  
+    if (selectResult.rows.length === 0) {
+      return res.status(404).send('Post no encontrado');
+    }
+  
+    
+    const updateLikesQuery = {
+      text: 'UPDATE posts SET likes = likes + 1 WHERE id = $1 RETURNING *',
+      values: [postId],
+    };
+  
+    try {
+      const updateResult = await client.query(updateLikesQuery);
+      res.status(200).json(updateResult.rows[0]);  
+    } catch (err) {
+      console.error('Error al actualizar los likes', err.stack);
+      res.status(500).send('Error al actualizar los likes');
+    }
+  });
 
+  app.delete('/posts/:id', async (req, res) => {
+    const postId = parseInt(req.params.id);
+  
+    
+    const selectQuery = 'SELECT * FROM posts WHERE id = $1';
+    const selectResult = await client.query(selectQuery, [postId]);
+  
+    if (selectResult.rows.length === 0) {
+      return res.status(404).send('Post no encontrado');
+    }
+  
+    
+    const deleteQuery = {
+      text: 'DELETE FROM posts WHERE id = $1 RETURNING *',
+      values: [postId],
+    };
+  
+    try {
+      const deleteResult = await client.query(deleteQuery);
+      res.status(200).json({ message: 'Post eliminado con éxito', post: deleteResult.rows[0] });
+    } catch (err) {
+      console.error('Error al eliminar el registro', err.stack);
+      res.status(500).send('Error al eliminar el registro');
+    }
+  });
+  
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
